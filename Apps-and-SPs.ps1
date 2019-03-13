@@ -18,7 +18,7 @@ if(!$ADApplication){
 #get token
 $apiVersion = "?api-version=2019-03-01"
 $uri = "https://management.azure.com/subscriptions/$subscriptionID/$apiVersion"
-$body= @{resource="https://management.azure.com/";client_id=$($ADApplication.ApplicationId);grant_type='client_credentials';client_secret = '1z2x3c!Z@X#C'}
+$body= @{resource="https://management.azure.com/";client_id=$($ADApplication.ApplicationId);grant_type='client_credentials';client_secret = ''}
 $authEndPoint = "https://login.microsoftonline.com/$tenantID/oauth2/token"
 $token = Invoke-RestMethod -Method Post -Uri $authEndPoint -Body $body
 $authHeader = @{Authorization = "Bearer $($token.access_token)"}
