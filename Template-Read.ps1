@@ -36,9 +36,5 @@ foreach ($element in $apiDocVersionArray){
     $json | Out-File -FilePath ".\$resourceProvider\$resource-$apiVersion.json" -force
 }
 
-
-#$jsonObject = Get-Content -Raw  -Path ".\$resourceProvider\$apiVersion\$service.json" |ConvertFrom-Json
-
-
-#$apiDocVersionArray   
+$excelObject.Documents.Close()
 

@@ -1,7 +1,8 @@
 ﻿# Usage ./ISM-Read.ps1 | convertto-csv -notypeinformation | out-file controls.csv
 
 $Word = New-Object -ComObject Word.Application
-$Document = $Word.Documents.Open('C:\Users\Andrew.McGregor\ISM.docx')
+$path = get-location
+$Document = $Word.Documents.Open("$path\Australian_Government_Information_Security_Manual.docx")
 $Word.Visible = $False
 $controlObjects = @()
 foreach ($paragraphs in $Document.Paragraphs) 
