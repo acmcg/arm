@@ -26,7 +26,7 @@ foreach ($paragraphs in $Document.Paragraphs)
     } 
 
 } 
-$controlObjects 
+$controlObjects | convertto-csv -notypeinformation | out-file controls.csv
 $Word.Documents.Close()
 
 
