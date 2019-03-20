@@ -1,4 +1,4 @@
-$excelIDs = Get-Process Excel -ea SilentlyContinue #work around until I can figure out how to clean up Objects
+$excelIDs = Get-Process Excel -erroraction SilentlyContinue #work around until I can figure out how to clean up Objects
 $TemplateDocsColumn = 9
 $ProviderNamespaceColumn = 3
 $ResourceColumn = 7
@@ -18,8 +18,8 @@ for ($row=2; $row -le $rowMax; $row++){ # start at 2 to ignore the column header
         $apiDocVersionArray += $apiDocVersionObject
         }
 }
-$excelObject.workbooks.Close() #$false - doesn't save changes
-$excelObject.Quit()
+$excelObject.workbooks.Close() | Out-Null 
+$excelObject.Quit() | Out-Null 
 [System.Runtime.Interopservices.Marshal]::ReleaseComObject($excelObject)
 #Create Excel Workbook
 Remove-Variable excelObject
@@ -47,13 +47,14 @@ foreach ($element in $apiDocVersionArray){
     $json | Out-File -FilePath ".\$resourceProvider\$resource-$apiVersion.json" -force
     # # Create workbooks
     $sheetName = $resourceProvider.Split(".")[1]
-    $sheetExists = $workbook.worksheets.item($sheetName)
-    if($sheetExists){ # If sheet already exists
-        $currentSheet = $workbook.worksheets.item($sheetName)
-        $rowMax = ($currentSheet.UsedRange.Rows).count
-        $startingExcelRow = $rowMax +5 # write the JSON data after the last row
+    try{
+        if($workbook.worksheets.item($sheetName)){ # If sheet already exists
+            $currentSheet = $workbook.worksheets.item($sheetName)
+            $rowMax = ($currentSheet.UsedRange.Rows).count
+            $startingExcelRow = $rowMax +5 # write the JSON data after the last row
+        }
     }
-    else{
+    catch{
         $currentSheet = $workbook.Worksheets.add()
         $startingExcelRow = 2 # write the JSON two rows from the top of the sheet
         $currentSheet.Name = $sheetName
@@ -80,16 +81,16 @@ foreach ($element in $apiDocVersionArray){
 }
 #$currentSheet = $workbook.Worksheets.add()
 $fileNameSuffix = get-date -Format yyMMddHHmm
-#$excelObject.ActiveWorkbook.SaveAs("$outputpath\ISM-$fileNameSuffix.xlsx") 
-$excelObject.ActiveWorkbook.SaveAs("$location\ISM Protected Controls.xlsx")
-$excelObject.Workbooks.Close()
-$excelObject.quit()
+$excelObject.ActiveWorkbook.SaveAs("$outputpath\ISM-$fileNameSuffix.xlsx") 
+#$excelObject.ActiveWorkbook.SaveAs("$location\ISM Protected Controls.xlsx")
+$excelObject.Workbooks.Close() | Out-Null
+$excelObject.quit() | Out-Null
 [System.Runtime.Interopservices.Marshal]::ReleaseComObject($excelObject)
 
-$leftoverExelObj = Get-Process Excel -ea SilentlyContinue | ? {$_.Id -notin $excelIDs.Id}
-if ($leftoverExelObj)
+$leftoverExelObj = Get-Process Excel -ea SilentlyContinue | ?{$_.Id -notin $excelIDs.Id}
+foreach ($process in $leftoverExelObj)
 {
-    $leftoverExcelObj.Kill() | Out-Null
+    $process.kill() | Out-Null 
 } 
 
 
