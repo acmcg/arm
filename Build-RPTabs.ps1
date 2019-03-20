@@ -1,10 +1,12 @@
-
+$excelIDs = Get-Process Excel -ea SilentlyContinue #work around until I can figure out how to clean up Objects
 $TemplateDocsColumn = 9
 $ProviderNamespaceColumn = 3
 $ResourceColumn = 7
+$location = Get-Location 
 $dateRegEx = "([2]\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01]))"
 $excelObject=new-object -com excel.application
-$workBook=$excelObject.workbooks.open("C:\Users\Andrew.McGregor\arm\ISM Protected Controls.xlsx")
+$workBook=$excelObject.workbooks.open("$location\ISM Protected Controls.xlsx")
+$excelObject.visible = $True
 $summarySheet = $Workbook.Sheets.Item("IRAP Service Summary")
 $apiDocVersionArray = @()
 $rowMax = ($summarySheet.UsedRange.Rows).count
@@ -16,13 +18,15 @@ for ($row=2; $row -le $rowMax; $row++){ # start at 2 to ignore the column header
         $apiDocVersionArray += $apiDocVersionObject
         }
 }
-
+$excelObject.workbooks.Close() #$false - doesn't save changes
+$excelObject.Quit()
+[System.Runtime.Interopservices.Marshal]::ReleaseComObject($excelObject)
 #Create Excel Workbook
-$excel = New-Object -ComObject excel.application 
-$excel.visible = $True
+Remove-Variable excelObject
+$excelObject = New-Object -ComObject excel.application 
 $outputpath = Get-Location
-
-$workbook = $excel.Workbooks.Add()
+$workBook=$excelObject.workbooks.open("$location\ISM Protected Controls.xlsx")
+$excelObject.visible = $True
 
 foreach ($element in $apiDocVersionArray){
     $apiVersion = $element.ApiVersion
@@ -51,20 +55,41 @@ foreach ($element in $apiDocVersionArray){
     }
     else{
         $currentSheet = $workbook.Worksheets.add()
-        $startingExcelRow = 0 # write the JSON data at the top of the sheet
+        $startingExcelRow = 2 # write the JSON two rows from the top of the sheet
         $currentSheet.Name = $sheetName
+        # Set header info
+        $currentSheet.Cells.item(1,2) = "Australian Central Protected"
+        $currentSheet.Cells.item(2,2) = "Must"
+        $currentSheet.Cells.item(2,3) = "Should"
+        $currentSheet.Cells.item(2,4) = "Control"
+        $currentSheet.Cells.item(2,5) = "Description"
+        $currentSheet.Cells.item(1,7) = "Australian Protected"
+        $currentSheet.Cells.item(2,7) = "Must"
+        $currentSheet.Cells.item(2,8) = "Should"
+        $currentSheet.Cells.item(2,9) = "Control"
+        $currentSheet.Cells.item(2,10) = "Description"
     }
     $content = get-content -raw ".\$resourceProvider\$resource-$apiVersion.json"
     $contentArray = $content.Split([Environment]::NewLine)
     for($arrayIndex = 0 ; $arrayIndex -lt $contentArray.Length ; $arrayIndex++){
         $currentSheet.Cells.item($startingExcelRow+$arrayIndex+1,1) = $contentArray[$arrayIndex] # add 1 to arrayindex because excel does have a row 0
     }
+    $output = $currentSheet.Columns.AutoFit()  
 
 
 }
-$currentSheet = $workbook.Worksheets.add()
-$currentSheet.Name = "ISM Controls"
-$workbook.SaveAs("$outputpath\rp.xlsx") 
+#$currentSheet = $workbook.Worksheets.add()
+$fileNameSuffix = get-date -Format yyMMddHHmm
+#$excelObject.ActiveWorkbook.SaveAs("$outputpath\ISM-$fileNameSuffix.xlsx") 
+$excelObject.ActiveWorkbook.SaveAs("$location\ISM Protected Controls.xlsx")
+$excelObject.Workbooks.Close()
+$excelObject.quit()
+[System.Runtime.Interopservices.Marshal]::ReleaseComObject($excelObject)
 
-$excelObject.Documents.Close()
+$leftoverExelObj = Get-Process Excel -ea SilentlyContinue | ? {$_.Id -notin $excelIDs.Id}
+if ($leftoverExelObj)
+{
+    $leftoverExcelObj.Kill() | Out-Null
+} 
+
 
